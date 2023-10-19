@@ -1,0 +1,7 @@
+batch_size = 64
+learning_rate = 3e-4
+steps = 300
+print_every = 30
+seed = 5678
+cnn_storage = "./res/cnn.eqx"
+sae_storage = "./res/sae.eqx"

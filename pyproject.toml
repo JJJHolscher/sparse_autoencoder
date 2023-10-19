@@ -1,6 +1,6 @@
 
 [project]
-name = "NAME"
+name = "sparse_autoencoder"
 version = "0.0.0" # TODO; automatically update versions by looking at git
 description = ""
 dependencies = []
@@ -19,7 +19,7 @@ demo = []
 github = "JJJHolscher"
 
 [project.urls]
-homepage = "https://github.com/JJJHolscher/NAME"
+homepage = "https://github.com/JJJHolscher/sparse_autoencoder"
 
 [[project.authors]]
 name = "Jochem Hölscher"
@@ -32,7 +32,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["NAME"]
+include = ["sparse_autoencoder"]
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
