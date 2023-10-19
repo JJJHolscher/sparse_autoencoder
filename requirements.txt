@@ -1,0 +1,11 @@
+argtoml
+build
+debugpy
+jo3util
+nbclassic
+notebook
+pyright
+twine
+typeguard
+git+https://github.com/kiyoon/jupynium.nvim@v0.2.1
+git+https://github.com/JJJHolscher/jupytools
