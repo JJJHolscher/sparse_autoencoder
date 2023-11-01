@@ -38,8 +38,8 @@ else:
 sae = train_sae(
     key,
     model,
-    lambda m: m.layers[4],
-    512,
+    lambda m: m.layers[6],
+    64,
     O.batch_size,
     O.learning_rate,
     O.steps,
