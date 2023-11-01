@@ -149,6 +149,8 @@ def train_cnn(
     trainloader, testloader = mnist.load(batch_size=batch_size)
     model = CNN(key)
     optim = optax.adamw(learning_rate)
-    model = train_loop(model, trainloader, testloader, optim, steps, print_every)
+    model = train_loop(
+        model, trainloader, testloader, optim, steps, print_every
+    )
     eqx.tree_serialise_leaves(model_storage, model)
     return model
