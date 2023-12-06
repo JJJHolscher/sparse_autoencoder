@@ -19,7 +19,6 @@ tqdm
 twine
 typeguard
 git+file:///mnt/nas/git/jo3util
-git+https://github.com/kiyoon/jupynium.nvim@v0.2.1
 git+https://github.com/JJJHolscher/jupytools
 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 -f https://download.pytorch.org/whl/cu118
