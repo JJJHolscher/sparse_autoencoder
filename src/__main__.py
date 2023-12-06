@@ -9,8 +9,6 @@ import argtoml
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import mnist
-import optax  # https://github.com/deepmind/optax
 from jaxtyping import Float  # https://github.com/google/jaxtyping
 from jaxtyping import Array, Int, PyTree
 from torch.utils.data import DataLoader

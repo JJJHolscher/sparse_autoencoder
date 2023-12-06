@@ -8,7 +8,7 @@
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import mnist
+import jo3mnist
 import optax  # https://github.com/deepmind/optax
 from jaxtyping import Float  # https://github.com/google/jaxtyping
 from jaxtyping import Array, Int, PyTree
@@ -146,7 +146,7 @@ def train_cnn(
     print_every,
     model_storage="./res/cnn.eqx",
 ):
-    trainloader, testloader = mnist.load(batch_size=batch_size)
+    trainloader, testloader = jo3mnist.load(batch_size=batch_size)
     model = CNN(key)
     optim = optax.adamw(learning_rate)
     model = train_loop(

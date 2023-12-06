@@ -3,7 +3,16 @@
 name = "sparse_autoencoder"
 version = "0.0.0" # TODO; automatically update versions by looking at git
 description = ""
-dependencies = []
+dependencies = [
+    "argtoml",
+    "equinox",
+    "jax",
+    "optax",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "jo3mnist"
+]
 dynamic = ["readme"]
 requires-python = ">=3.11"
 classifiers = [

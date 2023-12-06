@@ -10,7 +10,7 @@ from typing import Callable, List
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import mnist
+import jo3mnist
 import optax
 from jaxtyping import Array, Float, Int, PyTree
 from jo3util.eqx import insert_after, sow
@@ -138,7 +138,7 @@ def train_sae(
     print_every,
     sae_storage="./res/sae_layer_6.eqx",
 ):
-    trainloader, testloader = mnist.load(batch_size=batch_size)
+    trainloader, testloader = jo3mnist.load(batch_size=batch_size)
     sae = SAE(activ_size, 1000, key)
     optim = optax.adamw(learning_rate)
     sae = train_loop(
