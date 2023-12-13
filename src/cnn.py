@@ -152,5 +152,4 @@ def train_cnn(
     model = train_loop(
         model, trainloader, testloader, optim, steps, print_every
     )
-    eqx.tree_serialise_leaves(model_storage, model)
     return model

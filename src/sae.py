@@ -58,6 +58,13 @@ class SAE(eqx.Module):
         return out
 
 
+def sample_features(cnn, sae, loader):
+    for i, (x, _) in enumerate(loader):
+        x = x.numpy()
+        activ = jax.vmap(cnn)(x)[0]
+        yield i, sae.encode(activ)
+
+
 def evaluate(model: eqx.Module, testloader: DataLoader):
     """This function evaluates the model on the test dataset,
     computing both the average loss and the average accuracy.
@@ -68,9 +75,25 @@ def evaluate(model: eqx.Module, testloader: DataLoader):
         y = y.numpy()
         # Note that all the JAX operations happen inside `loss` and `compute_accuracy`,
         # and both have JIT wrappers, so this is fast.
-        pred_y = jnp.argmax(jax.vmap(model)(x)[0], axis=1)
+        pred_y = jnp.argmax(jax.vmap(model)(x)[-1], axis=1)
         avg_acc += jnp.mean(y == pred_y)
     return avg_acc / len(testloader)
+
+
+@eqx.filter_jit
+def make_step(
+    sae: SAE,
+    model: eqx.Module,
+    optim,
+    opt_state: PyTree,
+    x: Float[Array, "batch 1 28 28"],
+    y: Int[Array, " batch"],
+):
+    activ = jax.vmap(model)(x)[0]
+    loss_value, grads = SAE.loss(sae, activ[0], 1)
+    updates, opt_state = optim.update(grads, opt_state, sae)
+    sae = eqx.apply_updates(sae, updates)
+    return sae, opt_state, loss_value
 
 
 def train_loop(
@@ -89,23 +112,7 @@ def train_loop(
 
     print(f"test_accuracy={evaluate(model, testloader).item()}")
 
-    # Always wrap everything -- computing gradients, running the optimiser, updating
-    # the model -- into a single JIT region. This ensures things run as fast as
-    # possible.
-    @eqx.filter_jit
-    def make_step(
-        sae: SAE,
-        model: eqx.Module,
-        opt_state: PyTree,
-        x: Float[Array, "batch 1 28 28"],
-        y: Int[Array, " batch"],
-    ):
-        _, activ = jax.vmap(model)(x)
-        loss_value, grads = SAE.loss(sae, activ[0], 1)
-        updates, opt_state = optim.update(grads, opt_state, sae)
-        sae = eqx.apply_updates(sae, updates)
-        return sae, opt_state, loss_value
-
+    
     # Loop over our training dataset as many times as we need.
     def infinite_trainloader():
         while True:
@@ -116,7 +123,7 @@ def train_loop(
         # so convert them to NumPy arrays.
         x = x.numpy()
         y = y.numpy()
-        sae, opt_state, train_loss = make_step(sae, model, opt_state, x, y)
+        sae, opt_state, train_loss = make_step(sae, model, optim, opt_state, x, y)
         if (step % print_every) == 0 or (step == steps - 1):
             model_with_sae = insert_after(sae_pos, model, sae)
             test_accuracy = evaluate(model_with_sae, testloader)
@@ -132,16 +139,16 @@ def train_sae(
     cnn,
     sae_pos,
     activ_size,
+    hidden_size,
     batch_size,
     learning_rate,
     steps,
     print_every,
-    sae_storage="./res/sae_layer_6.eqx",
 ):
     trainloader, testloader = jo3mnist.load(batch_size=batch_size)
-    sae = SAE(activ_size, 1000, key)
+    sae = SAE(activ_size, hidden_size, key)
     optim = optax.adamw(learning_rate)
-    sae = train_loop(
+    return train_loop(
         sae,
         cnn,
         sae_pos,
@@ -151,5 +158,3 @@ def train_sae(
         steps,
         print_every,
     )
-    eqx.tree_serialise_leaves(sae_storage, sae)
-    return sae

@@ -1,25 +1,21 @@
-argtoml
+argtoml[save]
 build
 debugpy
 equinox
-jax>=0.4.14
+jax
 jaxtyping
+jo3mnist
+jo3util
 matplotlib
-nbclassic
-notebook
 optax
 pandas
 pyright
 scikit-learn
-tensorboard
-tensorboardX
+tensorflow
 torch
 torchvision
 tqdm
 twine
 typeguard
-git+file:///mnt/nas/git/jo3util
-git+https://github.com/JJJHolscher/jupytools
 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
--f https://download.pytorch.org/whl/cu118
-git+file:///mnt/nas/git/mnist
+--extra-index-url https://download.pytorch.org/whl/cpu
