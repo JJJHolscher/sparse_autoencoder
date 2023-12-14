@@ -10,6 +10,7 @@ import jax.numpy as jnp
 import jo3mnist
 from jo3util import eqx as jo3eqx
 from jo3util.root import run_dir
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from .cnn import CNN, train_cnn
@@ -49,6 +50,7 @@ for sae_hyperparams in O.sae:
         sae_hyperparams.learning_rate,
         O.steps,
         O.print_every,
+        SummaryWriter(sae_dir / "log")
     )
 
     sae_dir.mkdir()
