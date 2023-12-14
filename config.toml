@@ -1,47 +1,33 @@
 batch_size = 64
-steps = 500000
-print_every = 10000
+steps = 1000000
+print_every = 50000
 seed = 0
 cnn_storage = "./res/cnn.eqx"
 
 [[sae]]
 layer = 6
-hidden_size = 1000
-input_size = 64
-learning_rate = 0.1
-
-[[sae]]
-layer = 6
-hidden_size = 1000
-input_size = 64
-learning_rate = 3e-2
-
-[[sae]]
-layer = 6
-hidden_size = 1000
-input_size = 64
-learning_rate = 1e-2
-
-[[sae]]
-layer = 6
-hidden_size = 1000
-input_size = 64
-learning_rate = 3e-3
-
-[[sae]]
-layer = 6
-hidden_size = 1000
+hidden_size = 300
 input_size = 64
 learning_rate = 1e-3
+l1 = 3e-4 # from Neel Nanda's sae git
 
 [[sae]]
 layer = 6
-hidden_size = 1000
+hidden_size = 300
 input_size = 64
 learning_rate = 3e-4
+l1 = 3e-4
 
 [[sae]]
 layer = 6
-hidden_size = 1000
+hidden_size = 300
 input_size = 64
 learning_rate = 1e-4
+l1 = 3e-4
+
+[[sae]]
+layer = 6
+hidden_size = 300
+input_size = 64
+learning_rate = 3e-5
+l1 = 3e-4
