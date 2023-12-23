@@ -39,21 +39,25 @@ for sae_hyperparams in O.sae:
     sae_dir = run_dir(sae_hyperparams)
     if sae_dir.exists():
         continue
-
-    sae = train_sae(
-        key,
-        cnn,
-        lambda m: m.layers[sae_hyperparams.layer],
-        sae_hyperparams.input_size,
-        sae_hyperparams.hidden_size,
-        O.batch_size,
-        sae_hyperparams.learning_rate,
-        O.steps,
-        O.print_every,
-        SummaryWriter(sae_dir / "log")
-    )
-
     sae_dir.mkdir()
+
+    with SummaryWriter(sae_dir / "log") as tensorboard:
+        tensorboard.add_text("hyperparameters", str(sae_hyperparams))
+
+        sae = train_sae(
+            key,
+            cnn,
+            sae_hyperparams.layer,
+            sae_hyperparams.input_size,
+            sae_hyperparams.hidden_size,
+            O.batch_size,
+            sae_hyperparams.learning_rate,
+            O.steps,
+            O.print_every,
+            tensorboard,
+            sae_hyperparams.l1,
+        )
+
     argtoml.save(sae_hyperparams, sae_dir / "sae-hyperparams.toml")
     argtoml.save(O, sae_dir / "config.toml")
     jo3eqx.save(
@@ -70,7 +74,7 @@ for sae_hyperparams in O.sae:
     sae = jo3eqx.load(sae_dir / f"sae.eqx", SAE)
     sown_cnn = jo3eqx.sow(lambda m: m.layers[sae_hyperparams.layer], cnn)
     trainloader, testloader = jo3mnist.load(
-        batch_size=O.batch_size, shuffle=False
+        batch_size=1, shuffle=False
     )
 
     train_dir = sae_dir / f"train"
