@@ -63,9 +63,11 @@ class SAE(eqx.Module):
 
     @staticmethod
     @filter_value_and_grad_with_aux
-    def loss(diff_model, static_model, sae_pos, x, y, λ):
+    def loss(diff_model, static_model, sae_pos, x, y, λ, key):
         model = eqx.combine(diff_model, static_model)
-        original_activ, reconstructed_activ, pred = jax.vmap(model)(x)
+        original_activ, reconstructed_activ, pred = jax.vmap(
+            lambda x, k: model(x, key=k), in_axes=(0, None), axis_name="batch"
+        )(x, key)
 
         reconstruction_err = jnp.mean(jax.vmap(jnp.dot, (0, 0))(
             (original_activ - reconstructed_activ),
@@ -78,11 +80,14 @@ class SAE(eqx.Module):
         return loss, (reconstruction_err, l1, deep_err)
 
 
-def sample_features(cnn, sae, loader):
+def sample_features(cnn, loader, key):
+    key, subkey = jax.random.split(key)
     for i, (x, _) in enumerate(loader):
         x = x.numpy()
-        activ = jax.vmap(cnn)(x)[0]
-        yield i, sae.encode(activ)[0]
+        activ = jax.vmap(
+            lambda x, k: cnn(x, key=k), in_axes=(0, None), axis_name="batch"
+        )(x, subkey)[0]
+        yield i, activ
 
 
 def evaluate(model: eqx.Module, testloader: DataLoader):
@@ -110,9 +115,12 @@ def make_step(
     x: Float[Array, "batch 1 28 28"],
     y: Float[Array, "batch"],
     λ: float,
+    key,
 ):
     diff_model, static_model = eqx.partition(model, freeze_spec)
-    (loss, aux), grads = SAE.loss(diff_model, static_model, sae_pos, x, y, λ)
+    (loss, aux), grads = SAE.loss(
+        diff_model, static_model, sae_pos, x, y, λ, key
+    )
     updates, opt_state = optim.update(grads, opt_state, model)
     model = eqx.apply_updates(model, updates)
     return model, opt_state, loss, *aux
@@ -129,6 +137,7 @@ def train_loop(
     print_every: int,
     tensorboard,
     λ,
+    key,
 ) -> eqx.Module:
     opt_state = optim.init(freeze_spec)
 
@@ -140,6 +149,7 @@ def train_loop(
     for step, (x, y) in zip(range(steps), infinite_trainloader()):
         # PyTorch dataloaders give PyTorch tensors by default,
         # so convert them to NumPy arrays.
+        key, subkey = jax.random.split(key)
         model, opt_state, loss, reconstruction_err, l1, deep_err = make_step(
             model,
             freeze_spec,
@@ -148,7 +158,8 @@ def train_loop(
             opt_state,
             x.numpy(),
             y.numpy(),
-            λ
+            λ,
+            subkey,
         )
         tensorboard.add_scalar("loss", loss.item(), step)
         if (step % print_every) == 0 or (step == steps - 1):
@@ -166,13 +177,12 @@ def train_loop(
     return sae_pos(model)
 
 
-def compose_model(cnn, sae, layer):
-    sae_pos = lambda m: m.layers[layer]
-    model = sow(sae_pos, cnn)
-    model = insert_after(sae_pos, model, sae)
-    model = sow(sae_pos, model)
+def compose_model(cnn, sae, sae_pos_):
+    model = sow(sae_pos_, cnn)
+    model = insert_after(sae_pos_, model, sae)
+    model = sow(sae_pos_, model)
 
-    sae_pos = lambda m: m.layers[layer].children[1]
+    sae_pos = lambda m: sae_pos_(m).children[1]
     freeze_spec = jtu.tree_map(lambda _: False, model)
     freeze_spec = eqx.tree_at(
         sae_pos,
@@ -195,11 +205,11 @@ def train_sae(
     print_every,
     tensorboard,
     λ,
+    trainloader,
+    testloader
 ):
-    trainloader, testloader = jo3mnist.load(batch_size=batch_size)
-    # print(f"test_accuracy={evaluate(cnn, testloader).item()}")
-
-    sae = SAE(activ_size, hidden_size, key)
+    key, subkey = jax.random.split(key)
+    sae = SAE(activ_size, hidden_size, subkey)
     model, freeze_spec, sae_pos = compose_model(cnn, sae, sae_pos)
     optim = optax.adamw(learning_rate)
     return train_loop(
@@ -212,5 +222,6 @@ def train_sae(
         steps,
         print_every,
         tensorboard,
-        λ
+        λ,
+        key,
     )
