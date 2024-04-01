@@ -80,13 +80,14 @@ class SAE(eqx.Module):
         return loss, (reconstruction_err, l1, deep_err)
 
 
-def sample_features(cnn, loader, key):
-    key, subkey = jax.random.split(key)
+def sample_features(cnn, loader, key, train_dir):
     for i, (x, _) in enumerate(loader):
-        x = x.numpy()
+        if (train_dir / f"{i}.npy").exists():
+            continue
+        key, subkey = jax.random.split(key)
         activ = jax.vmap(
             lambda x, k: cnn(x, key=k), in_axes=(0, None), axis_name="batch"
-        )(x, subkey)[0]
+        )(x.numpy(), subkey)[0]
         yield i, activ
 
 

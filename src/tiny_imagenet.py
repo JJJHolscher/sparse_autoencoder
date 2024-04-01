@@ -25,7 +25,6 @@ def preprocess_image(
     image_path: Union[str, Path],
 ) -> np.ndarray:
     image = cv2.imread(str(image_path))
-    print(image_path)
 
     # BGR to RGB
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

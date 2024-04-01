@@ -48,7 +48,7 @@ for sae_hyperparams in O.sae:
     print("saving features from the training set")
     key, subkey = jax.random.split(key)
     for i, features in tqdm(
-        sample_features(sown_cnn, trainloader, subkey), total=len(trainloader)
+        sample_features(sown_cnn, trainloader, subkey, train_dir), total=len(trainloader)
     ):
         jnp.save(train_dir / f"{i}.npy", features, allow_pickle=False)
 
