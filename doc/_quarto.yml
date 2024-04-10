@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: "../web"
+  # execute-dir: file
+  resources: [
+      "**",
+      "!*.ipynb",
+      "!*.qmd",
+      "!_*",
+      "!.*",
+      "!evcxr_pkg/*/src",
+      "!evcxr_pkg/*/target",
+      "!evcxr_pkg/*/.gitignore",
+      "!evcxr_pkg/*/Cargo.toml",
+      "!evcxr_pkg/*/Cargo.lock"
+    ]
+  post-render: "../cmd/quarto.sh post-render"
+execute:
+  warning: false
+  error: false

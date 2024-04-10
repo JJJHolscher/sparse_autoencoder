@@ -8,15 +8,16 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jo3mnist
+from eqxvision.models import googlenet
+from jo3util.debug import breakpoint as jo3bp
 from jo3util import eqx as jo3eqx
 from jo3util.root import run_dir
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from eqxvision.models import googlenet
 
-from .cnn import CNN, train_cnn
+from .cnn import evaluate
 from .sae import SAE, sample_features, train_sae
-from .tiny_imagenet import tiny_imagenet
+from .data import imagenet
 
 # Hyperparameters
 O = argtoml.parse_args()
@@ -24,39 +25,38 @@ O = argtoml.parse_args()
 key = jax.random.PRNGKey(O.seed)
 key, subkey = jax.random.split(key)
 
-cnn = googlenet(
-    "https://download.pytorch.org/models/googlenet-1378be20.pth"
-)
+# print("accuracy =", evaluate(
+#     googlenet("res/googlenet.pth"),
+#     imagenet(
+#         "res/imagenet/validation", shuffle=True, batch_size=O.batch_size
+#     )
+# )
 
-trainloader, testloader = tiny_imagenet(
-    "res/tiny-imagenet-200",
-    shuffle=False,
-    batch_size=1
-)
+sown_cnn = jo3eqx.sow(lambda m: m.inception5a, googlenet("res/googlenet.pth"))
 
-for sae_hyperparams in O.sae:
-    sae_dir = run_dir(sae_hyperparams, "run")
+loader = imagenet("res/imagenet/train", shuffle=False, batch_size=1)
+sae_dir = run_dir(O, "run")
+train_dir = sae_dir / f"train"
+train_dir.mkdir(parents=True, exist_ok=True)
 
-    if O.googlenet:
-        sae_pos = lambda m: m.inception5b
-    else:
-        sae_pos = lambda m: m.layers[sae_hyperparams.layer]
-
-    sown_cnn = jo3eqx.sow(sae_pos, cnn)
-
-    train_dir = sae_dir / f"train"
-    print("saving features from the training set")
-    key, subkey = jax.random.split(key)
-    for i, features in tqdm(
-        sample_features(sown_cnn, trainloader, subkey, train_dir), total=len(trainloader)
-    ):
+print("saving features from the training set")
+key, subkey = jax.random.split(key)
+for i, features in tqdm(
+    sample_features(sown_cnn, loader, subkey, train_dir),
+    total=len(loader),
+):
+    if features is not None:
         jnp.save(train_dir / f"{i}.npy", features, allow_pickle=False)
 
-    test_dir = sae_dir / f"test"
-    test_dir.mkdir(exist_ok=True)
-    print("saving features from the test set")
-    key, subkey = jax.random.split(key)
-    for i, features in tqdm(
-        sample_features(sown_cnn, testloader, subkey), total=len(testloader)
-    ):
+loader = imagenet("res/imagenet/validation", shuffle=False, batch_size=1)
+test_dir = sae_dir / f"test"
+test_dir.mkdir(exist_ok=True)
+
+print("saving features from the test set")
+key, subkey = jax.random.split(key)
+for i, features in tqdm(
+    sample_features(sown_cnn, loader, subkey, test_dir),
+    total=len(loader),
+):
+    if features is not None:
         jnp.save(test_dir / f"{i}.npy", features, allow_pickle=False)

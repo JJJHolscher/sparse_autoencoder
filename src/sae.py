@@ -69,10 +69,12 @@ class SAE(eqx.Module):
             lambda x, k: model(x, key=k), in_axes=(0, None), axis_name="batch"
         )(x, key)
 
-        reconstruction_err = jnp.mean(jax.vmap(jnp.dot, (0, 0))(
-            (original_activ - reconstructed_activ),
-            (original_activ - reconstructed_activ)
-        ))
+        reconstruction_err = jnp.mean(
+            jax.vmap(jnp.dot, (0, 0))(
+                (original_activ - reconstructed_activ),
+                (original_activ - reconstructed_activ),
+            )
+        )
         l1 = λ * jnp.mean(sae_pos(model).l1(original_activ))
         deep_err = jnp.mean(cross_entropy(y, pred))
 
@@ -81,9 +83,12 @@ class SAE(eqx.Module):
 
 
 def sample_features(cnn, loader, key, train_dir):
-    for i, (x, _) in enumerate(loader):
+    loader_iter = iter(loader)
+    for i in range(len(loader)):
         if (train_dir / f"{i}.npy").exists():
+            yield i, None
             continue
+        x, _ = next(loader_iter)
         key, subkey = jax.random.split(key)
         activ = jax.vmap(
             lambda x, k: cnn(x, key=k), in_axes=(0, None), axis_name="batch"
@@ -188,9 +193,9 @@ def compose_model(cnn, sae, sae_pos_):
     freeze_spec = eqx.tree_at(
         sae_pos,
         freeze_spec,
-        replace=jtu.tree_map(lambda leaf: eqx.is_array(leaf), sae)
+        replace=jtu.tree_map(lambda leaf: eqx.is_array(leaf), sae),
     )
-    
+
     return model, freeze_spec, sae_pos
 
 
@@ -207,7 +212,7 @@ def train_sae(
     tensorboard,
     λ,
     trainloader,
-    testloader
+    testloader,
 ):
     key, subkey = jax.random.split(key)
     sae = SAE(activ_size, hidden_size, subkey)

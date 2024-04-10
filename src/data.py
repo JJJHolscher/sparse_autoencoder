@@ -5,12 +5,49 @@ from pathlib import Path
 from typing import Union
 
 import cv2
-from PIL import Image
 import numpy as np
 import torch
+from torch import Tensor
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import Resize, ConvertImageDtype, Normalize
+from torchvision import transforms
+from torchvision.transforms import ConvertImageDtype, Normalize, Resize
 from torchvision.transforms import functional as F_vision
+import datasets
+
+
+def imagenet(path: Union[str, Path], **kwargs):
+    return DataLoader(ImageNet(path), **kwargs)
+
+
+class ImageNet(Dataset):
+    def __init__(self, directory, image_size=224):
+        self.set = datasets.Dataset.load_from_disk(str(directory))
+        self.pre_transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop([image_size, image_size]),
+        ])
+        self.post_transform = transforms.Compose([
+            transforms.ConvertImageDtype(torch.float),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+    def __getitem__(self, i):
+        image_label = self.set[i]
+        image, label = image_label["image"], image_label["label"]
+        # Data preprocess
+        image = self.pre_transform(image)
+        # Convert image data into Tensor stream format (PyTorch).
+        # Note: The range of input and output is between [0, 1]
+        image = F_vision.to_tensor(image)
+        # Data postprocess
+        if image.shape[0] == 1:
+            image = image.repeat(3, 1, 1)
+        image = self.post_transform(image)
+        return image, label
+
+    def __len__(self):
+        return len(self.set)
 
 
 def tiny_imagenet(path: Union[str, Path], **kwargs):
@@ -45,7 +82,6 @@ def preprocess_image(
 
 
 class TinyImageTrainNet(Dataset):
-
     def __init__(self, root_dir):
         self.root = Path(root_dir)
 
@@ -93,7 +129,6 @@ class TinyImageTrainNet(Dataset):
 
 
 class TinyImageTestNet(Dataset):
-
     def __init__(self, root_dir):
         self.dir = Path(root_dir)
 
@@ -108,14 +143,13 @@ class TinyImageTestNet(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        tensor_path = self.dir / "tensors" / f"test_{idx}.npy"
+        tensor_path = self.dir / "tensors" / f"val_{idx}.npy"
         if not tensor_path.exists():
             tensor_path.parent.mkdir(exist_ok=True)
-            image_path = self.dir / "images" / f"test_{idx}.JPEG"
+            image_path = self.dir / "images" / f"val_{idx}.JPEG"
             tensor = preprocess_image(image_path)
             np.save(tensor_path, tensor, allow_pickle=False)
         else:
             tensor = np.load(tensor_path)
 
         return tensor, self.labels[idx]
-

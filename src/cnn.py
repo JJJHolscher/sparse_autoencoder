@@ -13,6 +13,7 @@ import optax  # https://github.com/deepmind/optax
 from jaxtyping import Float  # https://github.com/google/jaxtyping
 from jaxtyping import Array, Int, PyTree
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 class CNN(eqx.Module):
@@ -43,14 +44,14 @@ class CNN(eqx.Module):
 
 @eqx.filter_jit
 def loss(
-    model: CNN, x: Float[Array, "batch 1 28 28"], y: Int[Array, " batch"]
+    model: CNN, x: Float[Array, "batch 1 28 28"], y: Int[Array, " batch"], key
 ) -> Float[Array, ""]:
     # Our input has the shape (BATCH_SIZE, 1, 28, 28), but our model operations on
     # a single input input image of shape (1, 28, 28).
     #
     # Therefore, we have to use jax.vmap, which in this case maps our model over the
     # leading (batch) axis.
-    pred_y = jax.vmap(model)(x)
+    pred_y = jax.vmap(lambda m, x, k: m(x, key=k))(model, x, key)
     return cross_entropy(y, pred_y)
 
 
@@ -65,30 +66,33 @@ def cross_entropy(
 
 @eqx.filter_jit
 def compute_accuracy(
-    model: CNN, x: Float[Array, "batch 1 28 28"], y: Int[Array, " batch"]
+    model: CNN, x: Float[Array, "batch channel width height"], y: Int[Array, " batch"], key
 ) -> Float[Array, ""]:
     """This function takes as input the current model
     and computes the average accuracy on a batch.
     """
-    pred_y = jax.vmap(model)(x)
+    pred_y = jax.vmap(
+        lambda x, k: model(x, key=k), in_axes=(0, None), axis_name="batch"
+    )(x, key)
     pred_y = jnp.argmax(pred_y, axis=1)
     return jnp.mean(y == pred_y)
 
 
-def evaluate(model: CNN, testloader: DataLoader):
+def evaluate(model: CNN, testloader: DataLoader, key=jax.random.PRNGKey(0)):
     """This function evaluates the model on the test dataset,
     computing both the average loss and the average accuracy.
     """
-    avg_loss = 0
     avg_acc = 0
-    for x, y in testloader:
+    iterator = tqdm(testloader, total=len(testloader))
+    for i, (x, y) in enumerate(iterator):
+        key, subkey = jax.random.split(key, 2)
         x = x.numpy()
         y = y.numpy()
         # Note that all the JAX operations happen inside `loss` and `compute_accuracy`,
         # and both have JIT wrappers, so this is fast.
-        avg_loss += loss(model, x, y)
-        avg_acc += compute_accuracy(model, x, y)
-    return avg_loss / len(testloader), avg_acc / len(testloader)
+        avg_acc += compute_accuracy(model, x, y, subkey)
+        iterator.set_description(f"acc={avg_acc/(i+1)}")
+    return avg_acc / len(testloader)
 
 
 def train_loop(

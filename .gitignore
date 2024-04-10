@@ -1,5 +1,7 @@
 # JO3'S DEFAULT IGNORE RULES
 /tmp*
+/run
+/res
 ## python
 /build/
 /dist/

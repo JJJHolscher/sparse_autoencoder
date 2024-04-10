@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# cargo install cargo-watch
+cargo watch -w "src" -s "clear && cmd/build"

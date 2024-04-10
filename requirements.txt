@@ -21,3 +21,6 @@ typeguard
 --extra-index-url https://download.pytorch.org/whl/cpu
 eqxvision
 opencv-python
+datasets
+jupyterlab
+ipywidgets

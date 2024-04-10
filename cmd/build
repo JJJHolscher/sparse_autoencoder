@@ -1,0 +1,5 @@
+#!/bin/sh
+
+tailwindcss -i web/input.css -o web/tailwind.css
+cd doc
+quarto render
