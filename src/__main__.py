@@ -34,29 +34,16 @@ key, subkey = jax.random.split(key)
 
 sown_cnn = jo3eqx.sow(lambda m: m.inception5a, googlenet("res/googlenet.pth"))
 
-loader = imagenet("res/imagenet/train", shuffle=False, batch_size=1)
+loader = imagenet("res/imagenet/" + O.split, shuffle=False, batch_size=1)
 sae_dir = run_dir(O, "run")
-train_dir = sae_dir / f"train"
-train_dir.mkdir(parents=True, exist_ok=True)
+directory = sae_dir / O.split
+directory.mkdir(parents=True, exist_ok=True)
 
-print("saving features from the training set")
+print("saving features from the", O.split, "set")
 key, subkey = jax.random.split(key)
 for i, features in tqdm(
-    sample_features(sown_cnn, loader, subkey, train_dir),
+    sample_features(sown_cnn, loader, subkey, directory),
     total=len(loader),
 ):
     if features is not None:
-        jnp.save(train_dir / f"{i}.npy", features, allow_pickle=False)
-
-loader = imagenet("res/imagenet/validation", shuffle=False, batch_size=1)
-test_dir = sae_dir / f"test"
-test_dir.mkdir(exist_ok=True)
-
-print("saving features from the test set")
-key, subkey = jax.random.split(key)
-for i, features in tqdm(
-    sample_features(sown_cnn, loader, subkey, test_dir),
-    total=len(loader),
-):
-    if features is not None:
-        jnp.save(test_dir / f"{i}.npy", features, allow_pickle=False)
+        jnp.save(directory / f"{i}.npy", features, allow_pickle=False)
