@@ -1,4 +1,5 @@
 # JO3'S DEFAULT IGNORE RULES
+/doc/.quarto
 /tmp*
 /run
 /res
