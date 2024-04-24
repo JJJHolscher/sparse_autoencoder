@@ -33,15 +33,15 @@ if O.debug:
 
 cnn, cnn_state = googlenet("res/googlenet.pth")
 
-print(
-    "accuracy =",
-    evaluate(
-        eqx.Partial(eqx.nn.inference_mode(cnn), state=cnn_state),
-        imagenet(
-            "res/imagenet/validation", shuffle=True, batch_size=O.batch_size
-        ),
-    ),
-)
+# print(
+    # "accuracy =",
+    # evaluate(
+        # eqx.Partial(eqx.nn.inference_mode(cnn), state=cnn_state),
+        # imagenet(
+            # "res/imagenet/validation", shuffle=True, batch_size=O.batch_size
+        # ),
+    # ),
+# )
 
 sown_cnn = jo3eqx.sow(lambda m: m.inception5a, cnn)
 sown_cnn = eqx.Partial(eqx.nn.inference_mode(sown_cnn), state=cnn_state)

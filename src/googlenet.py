@@ -79,12 +79,17 @@ def load_torch_weights(
         ]
     )
 
+    running_mean = None
     bn_s = []
     for name, weight in saved_weights.items():
         if "running_mean" in name:
-            bn_s.append(jnp.asarray(weight.detach().numpy()))
+            bn_s.append(False)
+            assert running_mean is None
+            running_mean = jnp.asarray(weight.detach().numpy())
         elif "running_var" in name:
-            bn_s.append(jnp.asarray(weight.detach().numpy()))
+            assert running_mean is not None
+            bn_s.append((running_mean, jnp.asarray(weight.detach().numpy())))
+            running_mean = None
     bn_iterator = iter(bn_s)
 
     leaves, tree_def = jtu.tree_flatten(model)
@@ -101,7 +106,7 @@ def load_torch_weights(
 
     model = jtu.tree_unflatten(tree_def, new_leaves)
 
-    for state_index in jtu.tree_flatten(
+    for state_index in jtu.tree_leaves(
         model, is_leaf=lambda m: isinstance(m, nn.StateIndex)
     ):
         if not isinstance(state_index, nn.StateIndex):
@@ -116,7 +121,6 @@ def load_torch_weights(
     # if isinstance(y, nn.StateIndex):
     # current_val = next(iter_bn)
     # if isinstance(current_val, bool):
-    # print("gotta do it")
     # eqx.experimental.set_state(y, jnp.asarray(False))
     # else:
     # running_mean, running_var = current_val, next(iter_bn)
