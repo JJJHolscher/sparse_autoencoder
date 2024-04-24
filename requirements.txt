@@ -1,7 +1,7 @@
 argtoml[save]
 build
 debugpy
-equinox==0.10.2
+equinox
 jax
 jaxtyping
 jo3mnist
@@ -19,7 +19,6 @@ twine
 typeguard
 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 --extra-index-url https://download.pytorch.org/whl/cpu
-eqxvision
 opencv-python
 datasets
 jupyterlab

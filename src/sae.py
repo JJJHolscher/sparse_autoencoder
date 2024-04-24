@@ -90,9 +90,11 @@ def sample_features(cnn, loader, key, train_dir):
             continue
         x, _ = next(loader_iter)
         key, subkey = jax.random.split(key)
-        activ = jax.vmap(
-            lambda x, k: cnn(x, key=k), in_axes=(0, None), axis_name="batch"
-        )(x.numpy(), subkey)[0]
+        [(activ, _state), (_pred, _state)] = jax.vmap(
+            lambda x, k: cnn(x, key=k),
+            in_axes=(0, None),
+            axis_name="batch",
+        )(x.numpy(), subkey)
         yield i, activ
 
 

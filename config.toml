@@ -1,3 +1,4 @@
 batch_size = 64
+debug = true
 seed = 1
 split = "validation"

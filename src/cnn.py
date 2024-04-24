@@ -71,7 +71,7 @@ def compute_accuracy(
     """This function takes as input the current model
     and computes the average accuracy on a batch.
     """
-    pred_y = jax.vmap(
+    pred_y, _state = jax.vmap(
         lambda x, k: model(x, key=k), in_axes=(0, None), axis_name="batch"
     )(x, key)
     pred_y = jnp.argmax(pred_y, axis=1)
